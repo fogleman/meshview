@@ -23,8 +23,8 @@ func LoadOBJ(path string) (*MeshData, error) {
 	}
 	defer file.Close()
 
-	lookup := make([]float32, 3, 1024)
 	count := 1
+	lookup := make([]float32, 3, 1024)
 	var data []float32
 	var indexes []int
 	scanner := bufio.NewScanner(file)
@@ -41,9 +41,8 @@ func LoadOBJ(path string) (*MeshData, error) {
 			x, _ := strconv.ParseFloat(args[0], 32)
 			y, _ := strconv.ParseFloat(args[1], 32)
 			z, _ := strconv.ParseFloat(args[2], 32)
-			lookup = append(lookup, float32(x))
-			lookup = append(lookup, float32(y))
-			lookup = append(lookup, float32(z))
+			v := []float32{float32(x), float32(y), float32(z)}
+			lookup = append(lookup, v...)
 			count++
 		case "f":
 			indexes = indexes[:0]
