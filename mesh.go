@@ -1,9 +1,24 @@
 package meshview
 
 import (
+	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/fogleman/fauxgl"
 	"github.com/go-gl/gl/v2.1/gl"
 )
+
+func LoadMesh(path string) (*MeshData, error) {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".stl":
+		return LoadSTL(path)
+	case ".obj":
+		return LoadOBJ(path)
+	}
+	return nil, fmt.Errorf("unrecognized mesh extension: %s", ext)
+}
 
 type MeshData struct {
 	Buffer []float32

@@ -49,7 +49,7 @@ func loadMesh(path string) chan *MeshData {
 	ch := make(chan *MeshData)
 	go func() {
 		start := time.Now()
-		data, err := LoadSTL(path)
+		data, err := LoadMesh(path)
 		if err != nil {
 			panic(err)
 		}
