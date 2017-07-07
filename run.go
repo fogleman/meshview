@@ -123,7 +123,8 @@ func Run(path string) {
 
 	// create vbo and interactor
 	mesh := NewMesh(data)
-	interactor := NewTurntable()
+	// interactor := NewTurntable()
+	interactor := NewArcball()
 	BindInteractor(window, interactor)
 
 	// render function
@@ -150,11 +151,7 @@ func Run(path string) {
 }
 
 func getMatrix(window *glfw.Window, interactor Interactor, mesh *Mesh) fauxgl.Matrix {
-	w, h := window.GetFramebufferSize()
-	aspect := float64(w) / float64(h)
 	matrix := mesh.Transform
-	matrix = interactor.Matrix().Mul(matrix)
-	matrix = matrix.LookAt(fauxgl.V(0, -5, 0), fauxgl.V(0, 0, 0), fauxgl.V(0, 0, 1))
-	matrix = matrix.Perspective(30, aspect, 1, 10)
+	matrix = interactor.Matrix(window).Mul(matrix)
 	return matrix
 }
