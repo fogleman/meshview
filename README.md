@@ -2,7 +2,7 @@
 
 Performant 3D mesh viewer written in Go.
 
-### Installation
+### Prerequisites
 
 First, install Go, set your `GOPATH`, and make sure `$GOPATH/bin` is on your `PATH`.
 
@@ -12,7 +12,9 @@ export GOPATH="$HOME/go"
 export PATH="$PATH:$GOPATH/bin"
 ```
 
-Next, fetch and build the `meshview` binary.
+You may need to [install prerequisites](https://github.com/go-gl/glfw#installation) for the glfw library.
+
+### Installation
 
 ```
 go get -u github.com/fogleman/meshview/cmd/meshview
