@@ -8,6 +8,8 @@ First, [install Go](https://golang.org/dl/), set your `GOPATH`, and make sure `$
 
 ```bash
 brew install go # if using homebrew
+
+# put these in .bash_profile or .zshrc
 export GOPATH="$HOME/go"
 export PATH="$PATH:$GOPATH/bin"
 ```
