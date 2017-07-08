@@ -30,7 +30,7 @@ var fragmentShader = `
 
 varying vec3 ec_pos;
 
-const vec3 light_direction = normalize(vec3(1, -1, 1));
+const vec3 light_direction = normalize(vec3(1, -1.5, 1));
 const vec3 object_color = vec3(0x5b / 255.0, 0xac / 255.0, 0xe3 / 255.0);
 
 void main() {
