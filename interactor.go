@@ -11,12 +11,14 @@ type Interactor interface {
 	Matrix(window *glfw.Window) fauxgl.Matrix
 	CursorPositionCallback(window *glfw.Window, x, y float64)
 	MouseButtonCallback(window *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey)
+	KeyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey)
 	ScrollCallback(window *glfw.Window, dx, dy float64)
 }
 
 func BindInteractor(window *glfw.Window, interactor Interactor) {
 	window.SetCursorPosCallback(glfw.CursorPosCallback(interactor.CursorPositionCallback))
 	window.SetMouseButtonCallback(glfw.MouseButtonCallback(interactor.MouseButtonCallback))
+	window.SetKeyCallback(glfw.KeyCallback(interactor.KeyCallback))
 	window.SetScrollCallback(glfw.ScrollCallback(interactor.ScrollCallback))
 }
 
@@ -92,7 +94,7 @@ type Arcball struct {
 
 func NewArcball() Interactor {
 	a := Arcball{}
-	a.Sensitivity = 6
+	a.Sensitivity = 20
 	a.Rotation = fauxgl.Identity()
 	return &a
 }
@@ -135,6 +137,32 @@ func (a *Arcball) MouseButtonCallback(window *glfw.Window, button glfw.MouseButt
 	}
 }
 
+func (a *Arcball) KeyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	if action == glfw.Press && mods == 0 {
+		if key >= 49 && key <= 55 {
+			a.Translation = fauxgl.Vector{}
+			a.Scroll = 0
+		}
+		switch key {
+		case 49: //1
+			a.Rotation = fauxgl.Identity()
+		case 50:
+			a.Rotation = fauxgl.Identity().Rotate(fauxgl.V(0, 0, 1), math.Pi/2)
+		case 51:
+			a.Rotation = fauxgl.Identity().Rotate(fauxgl.V(0, 0, 1), math.Pi)
+		case 52:
+			a.Rotation = fauxgl.Identity().Rotate(fauxgl.V(0, 0, 1), -math.Pi/2)
+		case 53:
+			a.Rotation = fauxgl.Identity().Rotate(fauxgl.V(1, 0, 0), math.Pi/2)
+		case 54:
+			a.Rotation = fauxgl.Identity().Rotate(fauxgl.V(1, 0, 0), -math.Pi/2)
+		case 55:
+			a.Rotation = fauxgl.Identity().Rotate(fauxgl.V(1, 1, 0).Normalize(), -math.Pi/4).Rotate(fauxgl.V(0, 0, 1), math.Pi/4)
+		case 88: //X
+		}
+	}
+}
+
 func (a *Arcball) ScrollCallback(window *glfw.Window, dx, dy float64) {
 	a.Scroll += dy
 }
@@ -154,9 +182,9 @@ func (a *Arcball) Matrix(window *glfw.Window) fauxgl.Matrix {
 	m := fauxgl.Identity()
 	m = m.Scale(fauxgl.V(s, s, s))
 	m = r.Mul(m)
-	m = m.LookAt(fauxgl.V(0, -5, 0), fauxgl.V(0, 0, 0), fauxgl.V(0, 0, 1))
-	m = m.Perspective(30, aspect, 1, 10)
 	m = m.Translate(t)
+	m = m.LookAt(fauxgl.V(0, -3, 0), fauxgl.V(0, 0, 0), fauxgl.V(0, 0, 1))
+	m = m.Perspective(50, aspect, 0.1, 100)
 	return m
 }
 
@@ -165,7 +193,7 @@ func screenPosition(window *glfw.Window) fauxgl.Vector {
 	w, h := window.GetSize()
 	x = (x/float64(w))*2 - 1
 	y = (y/float64(h))*2 - 1
-	return fauxgl.Vector{x, -y, 0}
+	return fauxgl.Vector{x, 0, -y}
 }
 
 func arcballVector(window *glfw.Window) fauxgl.Vector {

@@ -31,11 +31,11 @@ var fragmentShader = `
 varying vec3 ec_pos;
 
 const vec3 light_direction = normalize(vec3(1, -1, 1));
-const vec3 object_color = vec3(52 / 255.0, 152 / 255.0, 219 / 255.0);
+const vec3 object_color = vec3(0x5b / 255.0, 0xac / 255.0, 0xe3 / 255.0);
 
 void main() {
 	vec3 ec_normal = normalize(cross(dFdx(ec_pos), dFdy(ec_pos)));
-	float diffuse = max(0, dot(ec_normal, light_direction)) * 0.9 + 0.1;
+	float diffuse = max(0, dot(ec_normal, light_direction)) * 0.9 + 0.15;
 	vec3 color = object_color * diffuse;
 	gl_FragColor = vec4(color, 1);
 }
@@ -94,7 +94,7 @@ func Run(path string) {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
-	gl.ClearColor(0.83, 0.85, 0.87, 1)
+	gl.ClearColor(float32(0xd4)/255, float32(0xd9)/255, float32(0xde)/255, 1)
 
 	// compile shaders
 	program, err := compileProgram(vertexShader, fragmentShader)
