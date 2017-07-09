@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/fogleman/meshview"
@@ -9,8 +8,9 @@ import (
 
 func main() {
 	args := os.Args[1:]
-	if len(args) != 1 {
-		log.Fatalln("Usage: meshview input.stl")
+	if len(args) > 0 {
+		meshview.Run(args[0])
+	} else {
+		meshview.Run("")
 	}
-	meshview.Run(args[0])
 }

@@ -44,3 +44,7 @@ func (mesh *Mesh) Draw(positionAttrib uint32) {
 	gl.DisableVertexAttribArray(positionAttrib)
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 }
+
+func (mesh *Mesh) Destroy() {
+	gl.DeleteBuffers(1, &mesh.VertexBuffer)
+}

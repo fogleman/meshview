@@ -45,28 +45,26 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func loadMesh(path string) chan *MeshData {
-	ch := make(chan *MeshData)
+func loadMesh(path string, ch chan *MeshData) {
 	go func() {
 		start := time.Now()
 		data, err := LoadMesh(path)
 		if err != nil {
-			panic(err)
+			return // TODO: display an error
 		}
 		fmt.Printf(
 			"loaded %d triangles in %.3f seconds\n",
 			len(data.Buffer)/9, time.Since(start).Seconds())
 		ch <- data
-		close(ch)
 	}()
-	return ch
 }
 
 func Run(path string) {
 	start := time.Now()
 
 	// load mesh in the background
-	ch := loadMesh(path)
+	ch := make(chan *MeshData)
+	loadMesh(path, ch)
 
 	// initialize glfw
 	if err := glfw.Init(); err != nil {
@@ -106,33 +104,20 @@ func Run(path string) {
 	matrixUniform := uniformLocation(program, "matrix")
 	positionAttrib := attribLocation(program, "position")
 
-	// wait for mesh data to be loaded
-	var data *MeshData
-	for !window.ShouldClose() && data == nil {
-		select {
-		case data = <-ch:
-		default:
-			gl.Clear(gl.COLOR_BUFFER_BIT)
-			window.SwapBuffers()
-			glfw.PollEvents()
-		}
-	}
-	if window.ShouldClose() {
-		return
-	}
+	var mesh *Mesh
 
-	// create vbo and interactor
-	mesh := NewMesh(data)
-	// interactor := NewTurntable()
+	// create interactor
 	interactor := NewArcball()
 	BindInteractor(window, interactor)
 
 	// render function
 	render := func() {
 		gl.Clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		matrix := getMatrix(window, interactor, mesh)
-		setMatrix(matrixUniform, matrix)
-		mesh.Draw(positionAttrib)
+		if mesh != nil {
+			matrix := getMatrix(window, interactor, mesh)
+			setMatrix(matrixUniform, matrix)
+			mesh.Draw(positionAttrib)
+		}
 		window.SwapBuffers()
 	}
 
@@ -141,10 +126,22 @@ func Run(path string) {
 		render()
 	})
 
-	fmt.Printf("first frame at %.3f seconds\n", time.Since(start).Seconds())
+	// handle drop events
+	window.SetDropCallback(func(window *glfw.Window, filenames []string) {
+		loadMesh(filenames[0], ch)
+	})
 
 	// main loop
 	for !window.ShouldClose() {
+		select {
+		case data := <-ch:
+			if mesh != nil {
+				mesh.Destroy()
+			}
+			mesh = NewMesh(data)
+			fmt.Printf("first frame at %.3f seconds\n", time.Since(start).Seconds())
+		default:
+		}
 		render()
 		glfw.PollEvents()
 	}
