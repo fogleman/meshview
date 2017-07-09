@@ -129,6 +129,7 @@ func Run(path string) {
 	// handle drop events
 	window.SetDropCallback(func(window *glfw.Window, filenames []string) {
 		loadMesh(filenames[0], ch)
+		window.SetTitle(filenames[0])
 	})
 
 	// main loop
