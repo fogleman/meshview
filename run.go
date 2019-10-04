@@ -107,7 +107,10 @@ func Run(path string) {
 	var mesh *Mesh
 
 	// create interactor
-	interactor := NewArcball()
+	interactor := NewSwitchableInteractor([]Interactor{
+		NewArcball(),
+		NewWASD(nil),
+	})
 	BindInteractor(window, interactor)
 
 	// render function
