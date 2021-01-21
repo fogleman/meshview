@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/fogleman/fauxgl"
+	"github.com/fsnotify/fsnotify"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
@@ -62,9 +63,37 @@ func loadMesh(path string, ch chan *MeshData) {
 func Run(path string) {
 	start := time.Now()
 
-	// load mesh in the background
 	ch := make(chan *MeshData)
+
+	// watch for file changes
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		panic(err)
+	}
+	defer watcher.Close()
+
+	var watchedFile string
+	watch := func(path string) {
+		watcher.Remove(watchedFile)
+		if err := watcher.Add(path); err != nil {
+			panic(err)
+		}
+		watchedFile = path
+	}
+
+	var watchTimer *time.Timer
+	reload := func() {
+		if watchTimer != nil {
+			watchTimer.Stop()
+		}
+		watchTimer = time.AfterFunc(200*time.Millisecond, func() {
+			loadMesh(watchedFile, ch)
+		})
+	}
+
+	// load mesh in the background
 	loadMesh(path, ch)
+	watch(path)
 
 	// initialize glfw
 	if err := glfw.Init(); err != nil {
@@ -131,8 +160,10 @@ func Run(path string) {
 
 	// handle drop events
 	window.SetDropCallback(func(window *glfw.Window, filenames []string) {
-		loadMesh(filenames[0], ch)
-		window.SetTitle(filenames[0])
+		path := filenames[0]
+		loadMesh(path, ch)
+		watch(path)
+		window.SetTitle(path)
 	})
 
 	// main loop
@@ -144,6 +175,17 @@ func Run(path string) {
 			}
 			mesh = NewMesh(data)
 			fmt.Printf("first frame at %.3f seconds\n", time.Since(start).Seconds())
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				reload()
+			}
+		case _, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
 		default:
 		}
 		render()
