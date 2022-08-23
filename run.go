@@ -2,14 +2,25 @@ package meshview
 
 import (
 	"fmt"
+	"log"
 	"runtime"
 	"time"
 
 	"github.com/fogleman/fauxgl"
-	"github.com/fsnotify/fsnotify"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
+
+var objectColors = []fauxgl.Color{
+	fauxgl.HexColor("#e41a1c"),
+	fauxgl.HexColor("#377eb8"),
+	fauxgl.HexColor("#4daf4a"),
+	fauxgl.HexColor("#984ea3"),
+	fauxgl.HexColor("#ff7f00"),
+	fauxgl.HexColor("#ffff33"),
+	fauxgl.HexColor("#a65628"),
+	fauxgl.HexColor("#f781bf"),
+}
 
 var vertexShader = `
 #version 120
@@ -29,14 +40,15 @@ void main() {
 var fragmentShader = `
 #version 120
 
+uniform vec3 object_color;
+
 varying vec3 ec_pos;
 
 const vec3 light_direction = normalize(vec3(1, -1.5, 1));
-const vec3 object_color = vec3(0x5b / 255.0, 0xac / 255.0, 0xe3 / 255.0);
 
 void main() {
 	vec3 ec_normal = normalize(cross(dFdx(ec_pos), dFdy(ec_pos)));
-	float diffuse = max(0, dot(ec_normal, light_direction)) * 0.9 + 0.15;
+	float diffuse = max(0, dot(ec_normal, light_direction)) * 0.9 + 0.25;
 	vec3 color = object_color * diffuse;
 	gl_FragColor = vec4(color, 1);
 }
@@ -60,44 +72,19 @@ func loadMesh(path string, ch chan *MeshData) {
 	}()
 }
 
-func Run(path string) {
+func Run(paths []string) {
 	start := time.Now()
 
 	ch := make(chan *MeshData)
 
-	// watch for file changes
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		panic(err)
-	}
-	defer watcher.Close()
-
-	var watchedFile string
-	watch := func(path string) {
-		watcher.Remove(watchedFile)
-		if err := watcher.Add(path); err != nil {
-			panic(err)
-		}
-		watchedFile = path
-	}
-
-	var watchTimer *time.Timer
-	reload := func() {
-		if watchTimer != nil {
-			watchTimer.Stop()
-		}
-		watchTimer = time.AfterFunc(200*time.Millisecond, func() {
-			loadMesh(watchedFile, ch)
-		})
-	}
-
 	// load mesh in the background
-	loadMesh(path, ch)
-	watch(path)
+	for _, path := range paths {
+		loadMesh(path, ch)
+	}
 
 	// initialize glfw
 	if err := glfw.Init(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	defer glfw.Terminate()
 
@@ -105,9 +92,9 @@ func Run(path string) {
 	glfw.WindowHint(glfw.Samples, 4)
 	glfw.WindowHint(glfw.ContextVersionMajor, 2)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
-	window, err := glfw.CreateWindow(640, 640, path, nil, nil)
+	window, err := glfw.CreateWindow(640, 640, "Mesh Viewer", nil, nil)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	window.MakeContextCurrent()
 
@@ -115,7 +102,7 @@ func Run(path string) {
 
 	// initialize gl
 	if err := gl.Init(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	gl.Enable(gl.DEPTH_TEST)
@@ -126,14 +113,15 @@ func Run(path string) {
 	// compile shaders
 	program, err := compileProgram(vertexShader, fragmentShader)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	gl.UseProgram(program)
 
 	matrixUniform := uniformLocation(program, "matrix")
 	positionAttrib := attribLocation(program, "position")
+	objectColorUniform := uniformLocation(program, "object_color")
 
-	var mesh *Mesh
+	var meshes []*Mesh
 
 	// create interactor
 	interactor := NewSwitchableInteractor([]Interactor{
@@ -145,10 +133,15 @@ func Run(path string) {
 	// render function
 	render := func() {
 		gl.Clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		if mesh != nil {
-			matrix := getMatrix(window, interactor, mesh)
+		if len(meshes) > 0 {
+			matrix := getMatrix(window, interactor, meshes[0])
 			setMatrix(matrixUniform, matrix)
-			mesh.Draw(positionAttrib)
+			for i, mesh := range meshes {
+				c := objectColors[i%len(objectColors)]
+				r, g, b := float32(c.R), float32(c.G), float32(c.B)
+				gl.Uniform3f(objectColorUniform, r, g, b)
+				mesh.Draw(positionAttrib)
+			}
 		}
 		window.SwapBuffers()
 	}
@@ -160,32 +153,17 @@ func Run(path string) {
 
 	// handle drop events
 	window.SetDropCallback(func(window *glfw.Window, filenames []string) {
-		path := filenames[0]
-		loadMesh(path, ch)
-		watch(path)
-		window.SetTitle(path)
+		for _, path := range filenames {
+			loadMesh(path, ch)
+		}
 	})
 
 	// main loop
 	for !window.ShouldClose() {
 		select {
 		case data := <-ch:
-			if mesh != nil {
-				mesh.Destroy()
-			}
-			mesh = NewMesh(data)
+			meshes = append(meshes, NewMesh(data))
 			fmt.Printf("first frame at %.3f seconds\n", time.Since(start).Seconds())
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return
-			}
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				reload()
-			}
-		case _, ok := <-watcher.Errors:
-			if !ok {
-				return
-			}
 		default:
 		}
 		render()

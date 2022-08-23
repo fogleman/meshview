@@ -9,8 +9,8 @@ import (
 func main() {
 	args := os.Args[1:]
 	if len(args) > 0 {
-		meshview.Run(args[0])
+		meshview.Run(args)
 	} else {
-		meshview.Run("")
+		meshview.Run(nil)
 	}
 }
