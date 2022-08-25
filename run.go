@@ -12,8 +12,8 @@ import (
 )
 
 var objectColors = []fauxgl.Color{
-	fauxgl.HexColor("#e41a1c"),
 	fauxgl.HexColor("#377eb8"),
+	fauxgl.HexColor("#e41a1c"),
 	fauxgl.HexColor("#4daf4a"),
 	fauxgl.HexColor("#984ea3"),
 	fauxgl.HexColor("#ff7f00"),
