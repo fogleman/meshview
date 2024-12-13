@@ -58,7 +58,12 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func loadMesh(path string, ch chan *MeshData) {
+type LoadedMesh struct {
+	Index int
+	Data  *MeshData
+}
+
+func loadMesh(index int, path string, ch chan LoadedMesh) {
 	go func() {
 		start := time.Now()
 		data, err := LoadMesh(path)
@@ -68,18 +73,19 @@ func loadMesh(path string, ch chan *MeshData) {
 		fmt.Printf(
 			"loaded %d triangles in %.3f seconds\n",
 			len(data.Buffer)/9, time.Since(start).Seconds())
-		ch <- data
+		ch <- LoadedMesh{index, data}
 	}()
 }
 
 func Run(paths []string) {
 	start := time.Now()
 
-	ch := make(chan *MeshData)
+	ch := make(chan LoadedMesh)
 
 	// load mesh in the background
-	for _, path := range paths {
-		loadMesh(path, ch)
+	meshes := make([]*Mesh, len(paths))
+	for i, path := range paths {
+		loadMesh(i, path, ch)
 	}
 
 	// initialize glfw
@@ -106,7 +112,7 @@ func Run(paths []string) {
 	}
 
 	gl.Enable(gl.DEPTH_TEST)
-	gl.Enable(gl.CULL_FACE)
+	// gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
 	gl.ClearColor(float32(0xd4)/255, float32(0xd9)/255, float32(0xde)/255, 1)
 
@@ -121,8 +127,6 @@ func Run(paths []string) {
 	positionAttrib := attribLocation(program, "position")
 	objectColorUniform := uniformLocation(program, "object_color")
 
-	var meshes []*Mesh
-
 	// create interactor
 	interactor := NewSwitchableInteractor([]Interactor{
 		NewArcball(),
@@ -133,10 +137,13 @@ func Run(paths []string) {
 	// render function
 	render := func() {
 		gl.Clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
-		if len(meshes) > 0 {
+		if len(meshes) > 0 && meshes[0] != nil {
 			matrix := getMatrix(window, interactor, meshes[0])
 			setMatrix(matrixUniform, matrix)
 			for i, mesh := range meshes {
+				if mesh == nil {
+					continue
+				}
 				c := objectColors[i%len(objectColors)]
 				r, g, b := float32(c.R), float32(c.G), float32(c.B)
 				gl.Uniform3f(objectColorUniform, r, g, b)
@@ -154,15 +161,17 @@ func Run(paths []string) {
 	// handle drop events
 	window.SetDropCallback(func(window *glfw.Window, filenames []string) {
 		for _, path := range filenames {
-			loadMesh(path, ch)
+			i := len(meshes)
+			meshes = append(meshes, nil)
+			loadMesh(i, path, ch)
 		}
 	})
 
 	// main loop
 	for !window.ShouldClose() {
 		select {
-		case data := <-ch:
-			meshes = append(meshes, NewMesh(data))
+		case loadedMesh := <-ch:
+			meshes[loadedMesh.Index] = NewMesh(loadedMesh.Data)
 			fmt.Printf("first frame at %.3f seconds\n", time.Since(start).Seconds())
 		default:
 		}
