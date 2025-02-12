@@ -148,7 +148,7 @@ func Run(paths []string) {
 				const s = 1.2
 				perspectiveMatrix = viewMatrix.Orthographic(-s*aspect, s*aspect, -s, s, -100, 100)
 			} else {
-				perspectiveMatrix = viewMatrix.Perspective(50, aspect, 0.1, 100)
+				perspectiveMatrix = viewMatrix.Perspective(50, aspect, 0.01, 1000)
 			}
 			setMatrix(viewMatrixUniform, viewMatrix)
 			setMatrix(perspectiveMatrixUniform, perspectiveMatrix)
