@@ -25,15 +25,16 @@ var objectColors = []fauxgl.Color{
 var vertexShader = `
 #version 120
 
-uniform mat4 matrix;
+uniform mat4 viewMatrix;
+uniform mat4 perspectiveMatrix;
 
 attribute vec4 position;
 
 varying vec3 ec_pos;
 
 void main() {
-	gl_Position = matrix * position;
-	ec_pos = vec3(gl_Position);
+	gl_Position = perspectiveMatrix * position;
+	ec_pos = vec3(viewMatrix * position);
 }
 `
 
@@ -44,7 +45,7 @@ uniform vec3 object_color;
 
 varying vec3 ec_pos;
 
-const vec3 light_direction = normalize(vec3(1, -1.5, 1));
+const vec3 light_direction = normalize(vec3(0.5, 0.5, 1));
 
 void main() {
 	vec3 ec_normal = normalize(cross(dFdx(ec_pos), dFdy(ec_pos)));
@@ -123,7 +124,8 @@ func Run(paths []string) {
 	}
 	gl.UseProgram(program)
 
-	matrixUniform := uniformLocation(program, "matrix")
+	viewMatrixUniform := uniformLocation(program, "viewMatrix")
+	perspectiveMatrixUniform := uniformLocation(program, "perspectiveMatrix")
 	positionAttrib := attribLocation(program, "position")
 	objectColorUniform := uniformLocation(program, "object_color")
 
@@ -138,8 +140,14 @@ func Run(paths []string) {
 	render := func() {
 		gl.Clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT)
 		if len(meshes) > 0 && meshes[0] != nil {
-			matrix := getMatrix(window, interactor, meshes[0])
-			setMatrix(matrixUniform, matrix)
+			w, h := window.GetFramebufferSize()
+			aspect := float64(w) / float64(h)
+			viewMatrix := getMatrix(window, interactor, meshes[0])
+			// perspectiveMatrix := viewMatrix.Perspective(50, aspect, 0.1, 100)
+			const s = 1.2
+			perspectiveMatrix := viewMatrix.Orthographic(-s*aspect, s*aspect, -s, s, -100, 100)
+			setMatrix(viewMatrixUniform, viewMatrix)
+			setMatrix(perspectiveMatrixUniform, perspectiveMatrix)
 			for i, mesh := range meshes {
 				if mesh == nil {
 					continue

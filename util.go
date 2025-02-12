@@ -20,6 +20,9 @@ func LoadMesh(path string) (*MeshData, error) {
 }
 
 func boxForData(data []float32) fauxgl.Box {
+	if len(data) == 0 {
+		return fauxgl.Box{}
+	}
 	minx := data[0]
 	maxx := data[0]
 	miny := data[1]

@@ -27,7 +27,9 @@ func NewMesh(data *MeshData) *Mesh {
 	var vbo uint32
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(data.Buffer)*4, gl.Ptr(data.Buffer), gl.STATIC_DRAW)
+	if len(data.Buffer) > 0 {
+		gl.BufferData(gl.ARRAY_BUFFER, len(data.Buffer)*4, gl.Ptr(data.Buffer), gl.STATIC_DRAW)
+	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 
 	// compute number of vertices

@@ -145,13 +145,10 @@ func (wasd *WASD) Matrix(window *glfw.Window) fauxgl.Matrix {
 
 	wasd.updatePosition(window, dt)
 
-	w, h := window.GetFramebufferSize()
-	aspect := float64(w) / float64(h)
 	eye := wasd.position
 	center := eye.Add(wasd.sightVector())
 
 	m := fauxgl.Identity()
 	m = m.LookAt(eye, center, fauxgl.V(0, 0, 1))
-	m = m.Perspective(50, aspect, 0.01, 100)
 	return m
 }

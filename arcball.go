@@ -94,8 +94,6 @@ func (a *Arcball) ScrollCallback(window *glfw.Window, dx, dy float64) {
 }
 
 func (a *Arcball) Matrix(window *glfw.Window) fauxgl.Matrix {
-	w, h := window.GetFramebufferSize()
-	aspect := float64(w) / float64(h)
 	r := a.Rotation
 	if a.Rotate {
 		r = arcballRotate(a.Start, a.Current, a.Sensitivity).Mul(r)
@@ -110,7 +108,6 @@ func (a *Arcball) Matrix(window *glfw.Window) fauxgl.Matrix {
 	m = r.Mul(m)
 	m = m.Translate(t)
 	m = m.LookAt(fauxgl.V(0, -3, 0), fauxgl.V(0, 0, 0), fauxgl.V(0, 0, 1))
-	m = m.Perspective(50, aspect, 0.1, 100)
 	return m
 }
 
