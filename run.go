@@ -143,9 +143,13 @@ func Run(paths []string) {
 			w, h := window.GetFramebufferSize()
 			aspect := float64(w) / float64(h)
 			viewMatrix := getMatrix(window, interactor, meshes[0])
-			// perspectiveMatrix := viewMatrix.Perspective(50, aspect, 0.1, 100)
-			const s = 1.2
-			perspectiveMatrix := viewMatrix.Orthographic(-s*aspect, s*aspect, -s, s, -100, 100)
+			var perspectiveMatrix fauxgl.Matrix
+			if interactor.Orthographic() {
+				const s = 1.2
+				perspectiveMatrix = viewMatrix.Orthographic(-s*aspect, s*aspect, -s, s, -100, 100)
+			} else {
+				perspectiveMatrix = viewMatrix.Perspective(50, aspect, 0.1, 100)
+			}
 			setMatrix(viewMatrixUniform, viewMatrix)
 			setMatrix(perspectiveMatrixUniform, perspectiveMatrix)
 			for i, mesh := range meshes {

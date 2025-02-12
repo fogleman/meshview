@@ -111,6 +111,10 @@ func (a *Arcball) Matrix(window *glfw.Window) fauxgl.Matrix {
 	return m
 }
 
+func (a *Arcball) Orthographic() bool {
+	return true
+}
+
 func screenPosition(window *glfw.Window) fauxgl.Vector {
 	x, y := window.GetCursorPos()
 	w, h := window.GetSize()

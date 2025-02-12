@@ -78,7 +78,12 @@ func (wasd *WASD) strafe(window *glfw.Window) (int, int, int) {
 		sy++
 	}
 	if window.GetKey(glfw.KeySpace) == glfw.Press {
-		sz++
+		if window.GetKey(glfw.KeyLeftShift) == glfw.Press || window.GetKey(glfw.KeyRightShift) == glfw.Press {
+			sz--
+		} else {
+			sz++
+		}
+
 	}
 	return sx, sy, sz
 }
@@ -151,4 +156,8 @@ func (wasd *WASD) Matrix(window *glfw.Window) fauxgl.Matrix {
 	m := fauxgl.Identity()
 	m = m.LookAt(eye, center, fauxgl.V(0, 0, 1))
 	return m
+}
+
+func (wasd *WASD) Orthographic() bool {
+	return false
 }

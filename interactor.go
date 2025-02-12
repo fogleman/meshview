@@ -11,6 +11,7 @@ type Interactor interface {
 	MouseButtonCallback(window *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey)
 	KeyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey)
 	ScrollCallback(window *glfw.Window, dx, dy float64)
+	Orthographic() bool
 }
 
 func BindInteractor(window *glfw.Window, interactor Interactor) {
@@ -54,6 +55,10 @@ func (si *SwitchableInteractor) KeyCallback(window *glfw.Window, key glfw.Key, s
 
 func (si *SwitchableInteractor) ScrollCallback(window *glfw.Window, dx, dy float64) {
 	si.Interactors[si.Index].ScrollCallback(window, dx, dy)
+}
+
+func (si *SwitchableInteractor) Orthographic() bool {
+	return si.Interactors[si.Index].Orthographic()
 }
 
 // Turntable
