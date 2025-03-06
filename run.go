@@ -27,30 +27,39 @@ var vertexShader = `
 
 uniform mat4 viewMatrix;
 uniform mat4 perspectiveMatrix;
+uniform vec3 object_color;
 
 attribute vec4 position;
+attribute float color;
 
 varying vec3 ec_pos;
+varying vec3 ec_color;
 
 void main() {
 	gl_Position = perspectiveMatrix * position;
 	ec_pos = vec3(viewMatrix * position);
+	ec_color = object_color;
+	if (color != 0) {
+		float r = mod(floor(color / 1024), 32) / 31;
+		float g = mod(floor(color / 32), 32) / 31;
+		float b = mod(floor(color / 1), 32) / 31;
+		ec_color = vec3(r, g, b);
+	}
 }
 `
 
 var fragmentShader = `
 #version 120
 
-uniform vec3 object_color;
-
 varying vec3 ec_pos;
+varying vec3 ec_color;
 
 const vec3 light_direction = normalize(vec3(0.5, 0.5, 1));
 
 void main() {
 	vec3 ec_normal = normalize(cross(dFdx(ec_pos), dFdy(ec_pos)));
 	float diffuse = max(0, dot(ec_normal, light_direction)) * 0.9 + 0.25;
-	vec3 color = object_color * diffuse;
+	vec3 color = ec_color;// * diffuse;
 	gl_FragColor = vec4(color, 1);
 }
 `
@@ -127,6 +136,7 @@ func Run(paths []string) {
 	viewMatrixUniform := uniformLocation(program, "viewMatrix")
 	perspectiveMatrixUniform := uniformLocation(program, "perspectiveMatrix")
 	positionAttrib := attribLocation(program, "position")
+	colorAttrib := attribLocation(program, "color")
 	objectColorUniform := uniformLocation(program, "object_color")
 
 	// create interactor
@@ -159,7 +169,7 @@ func Run(paths []string) {
 				c := objectColors[i%len(objectColors)]
 				r, g, b := float32(c.R), float32(c.G), float32(c.B)
 				gl.Uniform3f(objectColorUniform, r, g, b)
-				mesh.Draw(positionAttrib)
+				mesh.Draw(positionAttrib, colorAttrib)
 			}
 		}
 		window.SwapBuffers()

@@ -66,5 +66,5 @@ func LoadOBJ(path string) (*MeshData, error) {
 	}
 
 	box := boxForData(data)
-	return &MeshData{data, box}, scanner.Err()
+	return &MeshData{data, nil, box}, scanner.Err()
 }

@@ -85,7 +85,7 @@ func loadSTLA(file *os.File) (*MeshData, error) {
 		i++
 	}
 	box := boxForData(data)
-	return &MeshData{data, box}, scanner.Err()
+	return &MeshData{data, nil, box}, scanner.Err()
 }
 
 func makeFloat(b []byte) float32 {
@@ -100,6 +100,7 @@ func loadSTLB(file *os.File, count int) (*MeshData, error) {
 	}
 
 	data := make([]float32, count*9)
+	color := make([]uint16, count*3)
 	wn := runtime.NumCPU() - 1
 	if wn < 1 {
 		wn = 1
@@ -119,6 +120,7 @@ func loadSTLB(file *os.File, count int) (*MeshData, error) {
 			}
 			for i := i0; i < i1; i++ {
 				j := i * 9
+				k := i * 3
 				b := buf[i*50+12:]
 				data[j+0] = makeFloat(b[0:])
 				data[j+1] = makeFloat(b[4:])
@@ -129,12 +131,27 @@ func loadSTLB(file *os.File, count int) (*MeshData, error) {
 				data[j+6] = makeFloat(b[24:])
 				data[j+7] = makeFloat(b[28:])
 				data[j+8] = makeFloat(b[32:])
+				c := uint16(b[36]) | uint16(b[37])<<8
+				color[k+0] = c
+				color[k+1] = c
+				color[k+2] = c
 			}
 			wg.Done()
 		}(wi)
 	}
 	wg.Wait()
 
+	var hasColor bool
+	for _, c := range color {
+		if c != 0 {
+			hasColor = true
+			break
+		}
+	}
+	if !hasColor {
+		color = nil
+	}
+
 	box := boxForData(data)
-	return &MeshData{data, box}, nil
+	return &MeshData{data, color, box}, nil
 }
