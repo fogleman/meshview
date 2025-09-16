@@ -24,10 +24,18 @@ func BindInteractor(window *glfw.Window, interactor Interactor) {
 type SwitchableInteractor struct {
 	Interactors []Interactor
 	Index       int
+	visible     map[int]bool
 }
 
 func NewSwitchableInteractor(interactors []Interactor) *SwitchableInteractor {
-	return &SwitchableInteractor{interactors, 0}
+	return &SwitchableInteractor{interactors, 0, make(map[int]bool)}
+}
+
+func (si *SwitchableInteractor) Visible(index int) bool {
+	if _, ok := si.visible[index]; !ok {
+		return true
+	}
+	return si.visible[index]
 }
 
 func (si *SwitchableInteractor) Switch() {
@@ -49,6 +57,15 @@ func (si *SwitchableInteractor) MouseButtonCallback(window *glfw.Window, button 
 func (si *SwitchableInteractor) KeyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if key == glfw.KeyTab && action == glfw.Press {
 		si.Switch()
+	}
+	if action == glfw.Press && mods == glfw.ModShift {
+		index := int(key - '1')
+		if index >= 0 && index < 9 {
+			if _, ok := si.visible[index]; !ok {
+				si.visible[index] = true
+			}
+			si.visible[index] = !si.visible[index]
+		}
 	}
 	si.Interactors[si.Index].KeyCallback(window, key, scancode, action, mods)
 }

@@ -59,7 +59,7 @@ const vec3 light_direction = normalize(vec3(0.5, 0.5, 1));
 void main() {
 	vec3 ec_normal = normalize(cross(dFdx(ec_pos), dFdy(ec_pos)));
 	float diffuse = max(0, dot(ec_normal, light_direction)) * 0.9 + 0.25;
-	vec3 color = ec_color;// * diffuse;
+	vec3 color = ec_color * diffuse;
 	gl_FragColor = vec4(color, 1);
 }
 `
@@ -122,7 +122,7 @@ func Run(paths []string) {
 	}
 
 	gl.Enable(gl.DEPTH_TEST)
-	// gl.Enable(gl.CULL_FACE)
+	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
 	gl.ClearColor(float32(0xd4)/255, float32(0xd9)/255, float32(0xde)/255, 1)
 
@@ -164,6 +164,9 @@ func Run(paths []string) {
 			setMatrix(perspectiveMatrixUniform, perspectiveMatrix)
 			for i, mesh := range meshes {
 				if mesh == nil {
+					continue
+				}
+				if !interactor.Visible(i) {
 					continue
 				}
 				c := objectColors[i%len(objectColors)]
